@@ -3,15 +3,21 @@
 // 주제 : 닷지(Dodge)
 // 화면 : 처음 화면(게임시작) 게임 화면 (날아오는적 피하기) 게임오버(다시시작, 종료)
 // 게임 설명 : 마우스로 날아오는 적들을 피해서 점수를 얻는 방식
-// Z키 : 폭탄 ( 3 개 ) 마우스와 같은 좌표를 가지다가 Z키가 눌리면 크기가 커졌다 작아짐
-//       폭탄과 적이 부딪히면 적은 사라진다.
-// X키 : 슬로우 ( 1 개 )
 // 
+// Z키 : 폭탄 ( 3 개 ) 마우스와 같은 좌표를 가지다가 Z키 누르면 장막의 크기가 커졌다 작아짐
+//       폭탄과 적이 부딪히면 적은 사라진다.
+// X키 : 치트 X키 누르면 플레이어 주변에 동그란 원이 생김 사라지지않고 폭탄과 같은 기능을 가짐
+// 
+// 난이도 조절
+// 일정한 시간이 지나면 랜덤한 위치에 도달해야 하는 포인트가 생긴다.
+// 제한 시간내에 포인트를 찍지 못하면 패배
+
 #include "framework.h"
 #include "Yuhan_Project.h"
 
 #define MAX_LOADSTRING 100
 #define IDM_BTN_START  123
+#define IDM_BTN_RESTART 124
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
@@ -130,21 +136,36 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 
 // 버튼을 위한 윈도우 핸들 선언
-HWND b_start;
+HWND b_start;           // 게임을 시작하기 위한 버튼
+HWND b_restart;         // 게임을 재시작하기 위한 버튼 
+HWND b_exit;            // 게임을 종료하기 위한 버튼
 
-static int bomb = 3;
+// 폭탄
+int bomb = 3;
 
+// 생존 시간
+int alive_time = 0;
+
+// 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
+
+// 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
-bool b_flag = true; // 스타트 버튼
+
+// b_start가 생성된 상태인지 체크
+bool b_flag = true; 
+
+//타이머 아이디를 선언
+#define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+
     switch (message)
     {
     case WM_KEYDOWN:
         switch (wParam)
-            case 0x5A:
+            case 0x5A: // Z키 입력시 
                 
         break;
 
@@ -153,8 +174,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_MOUSEMOVE:
+        // START 버튼이 없다면 플레이어의 좌표를 마우스 좌표로 설정
         if(b_flag == false)
         {
+        ShowCursor(false); // 시작시 커서를 숨김
         int x, y;
         x = LOWORD(lParam);
         y = HIWORD(lParam);
@@ -173,6 +196,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
+            case IDM_BTN_RESTART:
+                b_flag = true;
+                break;
             case IDM_BTN_START:
                 DestroyWindow(b_start);
                 b_flag = false;
@@ -189,22 +215,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_CREATE:
-
-        // 게임 플레이어의 초기 좌표 ( 게임 시작 클릭시 RECT좌표가 마우스에 고정)
+        MoveWindow(hWnd, 100, 100, 1440, 800, true);
+        // 게임 플레이어의 초기 좌표
         g_me.left = -1000;
         g_me.top  = -1000;
         g_me.right = g_me.left + 20;
         g_me.bottom = g_me.top + 20;
+
         // 게임시작 버튼
             b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE,
-                600, 300, 200, 80, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
+                600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
+
         break;
     case WM_PAINT:
         {
+            HFONT hFont, OldFont;
             PAINTSTRUCT ps;
+            WCHAR string[32] = { 0, };
             HDC hdc = BeginPaint(hWnd, &ps);
+            
+            
+            hFont = CreateFont(50, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT("궁서"));
+            OldFont = (HFONT)SelectObject(hdc, hFont);
+            if (b_flag == true)
+            TextOut(hdc, 615, 200, L"DODGE", lstrlenW(L"DODGE"));
+            hFont = CreateFont(14, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT("HY나무M"));
+            OldFont = (HFONT)SelectObject(hdc, hFont);
+            if (b_flag == true)
+            TextOut(hdc, 615, 700, L"날아오는 운석을 피해라..!", lstrlenW(L"날아오는 운석을 피해라..!"));
+            if (b_flag == false) {
+            TextOut(hdc, 10, 10, L"점수 : ", lstrlenW(L"점수 : "));
+            TextOut(hdc, 10, 700, L"폭탄(Z) : ", lstrlenW(L"폭탄(Z) : "));
+            TextOut(hdc, 1300, 700, L"치트(?) : ", lstrlenW(L"치트(?) : "));
+            }
+            //stat(hdc);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+            // 플레이어의 생성
             Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
+            SelectObject(hdc, OldFont);
+            DeleteObject(hFont);
+            
             EndPaint(hWnd, &ps);
         }
         break;
@@ -215,9 +265,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
-    return 0;
+    return true;
 }
-
+void stat(HDC hdc)
+{
+    TextOut(hdc, 10, 10, L"폭탄(Z) : ", lstrlenW(L"폭탄(Z) : "));
+    TextOut(hdc, 10, 50, L"생존 : ", lstrlenW(L"생존 : "));
+    TextOut(hdc, 10, 90, L"치트(?) : ", lstrlenW(L"치트(?) : "));
+}
 // 정보 대화 상자의 메시지 처리기입니다.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
