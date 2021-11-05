@@ -15,9 +15,10 @@
 #include "framework.h"
 #include "Yuhan_Project.h"
 
-#define MAX_LOADSTRING 100
-#define IDM_BTN_START  123
+#define MAX_LOADSTRING  100
+#define IDM_BTN_START   123
 #define IDM_BTN_RESTART 124
+#define IDM_BTN_EXIT    125
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
@@ -148,12 +149,15 @@ int alive_time = 0;
 
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
-
+RECT g_enemy; // 테스트
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
 
 // b_start가 생성된 상태인지 체크
 bool b_flag = true; 
+
+// 게임오버인지 체크
+bool b_gmover = false;
 
 //타이머 아이디를 선언
 #define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
@@ -163,10 +167,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     switch (message)
     {
+    //case WM_TIMER:
+    //    switch (wParam)
+    //    {
+    //        case TIMER_ID_1:
+    //            alive_time++;
+    //            Sleep(1000);
+    //            break;
+    //    }
+    //    break;
     case WM_KEYDOWN:
         switch (wParam)
-            case 0x5A: // Z키 입력시 
-                
+            case 0x5A: // Z키 입력시 g_bomb의 크기가 일시적으로 커졌다 원래 크기로 돌아감
+
         break;
 
     case WM_LBUTTONDOWN:
@@ -174,6 +187,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_MOUSEMOVE:
+        //RECT dst;
         // START 버튼이 없다면 플레이어의 좌표를 마우스 좌표로 설정
         if(b_flag == false)
         {
@@ -186,7 +200,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_me.top = y -10;
         g_me.right = x + 10;
         g_me.bottom = y + 10;
-
+            //if (TRUE == IntersectRect(&dst, &g_me, &g_enemy))     // 좌표 겹침이 존재한다면
+            //{
+            //    b_gmover = true;
+            //}
         InvalidateRect(hWnd, NULL, TRUE);
         }
         break;
@@ -196,12 +213,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
+            case IDM_BTN_EXIT:
+                MessageBox(hWnd, L"실력 키워서 오자~", L"Exit", MB_OK);
+                DestroyWindow(hWnd);
+                break;
             case IDM_BTN_RESTART:
+                DestroyWindow(b_restart);
+                DestroyWindow(b_exit);
                 b_flag = true;
+                b_gmover = false;
                 break;
             case IDM_BTN_START:
                 DestroyWindow(b_start);
                 b_flag = false;
+                b_gmover = false;
                 break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -222,6 +247,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_me.right = g_me.left + 20;
         g_me.bottom = g_me.top + 20;
 
+        //g_enemy.left = 700;
+        //g_enemy.top = 700;
+        //g_enemy.right = g_enemy.left + 20;
+        //g_enemy.bottom = g_enemy.top + 20;
+        
         // 게임시작 버튼
             b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE,
                 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
@@ -247,8 +277,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             TextOut(hdc, 10, 10, L"점수 : ", lstrlenW(L"점수 : "));
             TextOut(hdc, 10, 700, L"폭탄(Z) : ", lstrlenW(L"폭탄(Z) : "));
             TextOut(hdc, 1300, 700, L"치트(?) : ", lstrlenW(L"치트(?) : "));
+            Rectangle(hdc, g_enemy.left, g_enemy.top, g_enemy.right, g_enemy.bottom);
             }
-            //stat(hdc);
+            // 게임오버시 나오는 버튼
+            if (b_gmover == true)
+            {
+                b_restart = CreateWindow(L"button", L"RESTART", WS_CHILD | WS_VISIBLE,
+                    490, 300, 200, 60, hWnd, (HMENU)IDM_BTN_RESTART, hInst, NULL);
+                b_exit = CreateWindow(L"button", L"EXIT", WS_CHILD | WS_VISIBLE,
+                    710, 300, 200, 60, hWnd, (HMENU)IDM_BTN_EXIT, hInst, NULL);
+            }
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             // 플레이어의 생성
             Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
@@ -259,6 +297,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+        DestroyWindow(b_restart);
+        DestroyWindow(b_exit);
         DestroyWindow(b_start);
         PostQuitMessage(0);
         break;
@@ -267,12 +307,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return true;
 }
-void stat(HDC hdc)
-{
-    TextOut(hdc, 10, 10, L"폭탄(Z) : ", lstrlenW(L"폭탄(Z) : "));
-    TextOut(hdc, 10, 50, L"생존 : ", lstrlenW(L"생존 : "));
-    TextOut(hdc, 10, 90, L"치트(?) : ", lstrlenW(L"치트(?) : "));
-}
+
 // 정보 대화 상자의 메시지 처리기입니다.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
