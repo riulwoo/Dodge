@@ -17,8 +17,6 @@
 
 #define MAX_LOADSTRING  100
 #define IDM_BTN_START   123
-#define IDM_BTN_RESTART 124
-#define IDM_BTN_EXIT    125
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
@@ -138,14 +136,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 // 버튼을 위한 윈도우 핸들 선언
 HWND b_start;           // 게임을 시작하기 위한 버튼
-HWND b_restart;         // 게임을 재시작하기 위한 버튼 
-HWND b_exit;            // 게임을 종료하기 위한 버튼
+
+HWND g_hWnd;
 
 // 폭탄
 int bomb = 3;
 
 // 생존 시간
-int alive_time = 0;
+int time = 0;
 
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
@@ -159,6 +157,7 @@ bool b_flag = true;
 // 게임오버인지 체크
 bool b_gmover = false;
 
+wchar_t cheat = 'X';
 //타이머 아이디를 선언
 #define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
 
@@ -167,66 +166,71 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     switch (message)
     {
-    //case WM_TIMER:
-    //    switch (wParam)
-    //    {
-    //        case TIMER_ID_1:
-    //            alive_time++;
-    //            Sleep(1000);
-    //            break;
-    //    }
-    //    break;
-    case WM_KEYDOWN:
+    case WM_TIMER:
         switch (wParam)
-            case 0x5A: // Z키 입력시 g_bomb의 크기가 일시적으로 커졌다 원래 크기로 돌아감
-
-        break;
-
-    case WM_LBUTTONDOWN:
-        
-        break;
-
-    case WM_MOUSEMOVE:
-        //RECT dst;
-        // START 버튼이 없다면 플레이어의 좌표를 마우스 좌표로 설정
-        if(b_flag == false)
         {
-        ShowCursor(false); // 시작시 커서를 숨김
-        int x, y;
-        x = LOWORD(lParam);
-        y = HIWORD(lParam);
+            case TIMER_ID_1:
+                time++;
+                if (b_gmover == true)
+                {
+                    KillTimer(hWnd, TIMER_ID_1);
 
-        g_me.left = x - 10;
-        g_me.top = y -10;
-        g_me.right = x + 10;
-        g_me.bottom = y + 10;
-            //if (TRUE == IntersectRect(&dst, &g_me, &g_enemy))     // 좌표 겹침이 존재한다면
-            //{
-            //    b_gmover = true;
-            //}
-        InvalidateRect(hWnd, NULL, TRUE);
+                }
+                break;
         }
         break;
+    case WM_KEYDOWN:
+        switch (wParam)
+        {
+            case 0x5A: // Z키 입력시 g_bomb의 크기가 일시적으로 커졌다 원래 크기로 돌아감
+                if(bomb > 0)
+                {
+                    bomb--;
+
+                }
+                break;
+            case 0x58: // X키 입력시 g_bomb이 활성화 / invisible 상태
+                if (cheat == 'X')
+                    cheat = 'O';
+                else
+                    cheat = 'X';
+                break;
+        }
+
+    case WM_MOUSEMOVE:
+    {
+        RECT dst;
+        // START 버튼이 없다면 플레이어의 좌표를 마우스 좌표로 설정
+        if (b_flag == false)
+        {
+            ShowCursor(false); // 시작시 커서를 숨김
+            int x, y;
+            x = LOWORD(lParam);
+            y = HIWORD(lParam);
+
+            g_me.left = x - 10;
+            g_me.top = y - 10;
+            g_me.right = x + 10;
+            g_me.bottom = y + 10;
+            if (TRUE == IntersectRect(&dst, &g_me, &g_enemy))     // 좌표 겹침이 존재한다면
+            {
+                b_gmover = true;
+                ShowCursor(true);
+            }
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
+    }
+        break;
+    
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
-            case IDM_BTN_EXIT:
-                MessageBox(hWnd, L"실력 키워서 오자~", L"Exit", MB_OK);
-                DestroyWindow(hWnd);
-                break;
-            case IDM_BTN_RESTART:
-                DestroyWindow(b_restart);
-                DestroyWindow(b_exit);
-                b_flag = true;
-                b_gmover = false;
-                break;
             case IDM_BTN_START:
                 DestroyWindow(b_start);
                 b_flag = false;
-                b_gmover = false;
                 break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -240,6 +244,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_CREATE:
+        // 초기 화면값 설정
         MoveWindow(hWnd, 100, 100, 1440, 800, true);
         // 게임 플레이어의 초기 좌표
         g_me.left = -1000;
@@ -247,15 +252,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_me.right = g_me.left + 20;
         g_me.bottom = g_me.top + 20;
 
-        //g_enemy.left = 700;
-        //g_enemy.top = 700;
-        //g_enemy.right = g_enemy.left + 20;
-        //g_enemy.bottom = g_enemy.top + 20;
+        g_enemy.left = 700;
+        g_enemy.top = 700;
+        g_enemy.right = g_enemy.left + 20;
+        g_enemy.bottom = g_enemy.top + 20;
         
         // 게임시작 버튼
-            b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE,
-                600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
+            b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
 
+            SetTimer(hWnd, TIMER_ID_1, 1000, NULL);
         break;
     case WM_PAINT:
         {
@@ -263,29 +268,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             WCHAR string[32] = { 0, };
             HDC hdc = BeginPaint(hWnd, &ps);
-            
-            
             hFont = CreateFont(50, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT("궁서"));
             OldFont = (HFONT)SelectObject(hdc, hFont);
             if (b_flag == true)
-            TextOut(hdc, 615, 200, L"DODGE", lstrlenW(L"DODGE"));
-            hFont = CreateFont(14, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT("HY나무M"));
-            OldFont = (HFONT)SelectObject(hdc, hFont);
-            if (b_flag == true)
-            TextOut(hdc, 615, 700, L"날아오는 운석을 피해라..!", lstrlenW(L"날아오는 운석을 피해라..!"));
-            if (b_flag == false) {
-            TextOut(hdc, 10, 10, L"점수 : ", lstrlenW(L"점수 : "));
-            TextOut(hdc, 10, 700, L"폭탄(Z) : ", lstrlenW(L"폭탄(Z) : "));
-            TextOut(hdc, 1300, 700, L"치트(?) : ", lstrlenW(L"치트(?) : "));
-            Rectangle(hdc, g_enemy.left, g_enemy.top, g_enemy.right, g_enemy.bottom);
+            {
+                TextOut(hdc, 615, 200, L"DODGE", lstrlenW(L"DODGE"));
             }
-            // 게임오버시 나오는 버튼
             if (b_gmover == true)
             {
-                b_restart = CreateWindow(L"button", L"RESTART", WS_CHILD | WS_VISIBLE,
-                    490, 300, 200, 60, hWnd, (HMENU)IDM_BTN_RESTART, hInst, NULL);
-                b_exit = CreateWindow(L"button", L"EXIT", WS_CHILD | WS_VISIBLE,
-                    710, 300, 200, 60, hWnd, (HMENU)IDM_BTN_EXIT, hInst, NULL);
+                ShowCursor(true);
+                TextOut(hdc, 550, 200, L"GAME OVER", lstrlenW(L"GAME OVER"));
+                b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 400, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
+            }
+            hFont = CreateFont(14, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT("HY나무M"));
+            OldFont = (HFONT)SelectObject(hdc, hFont);
+            if(b_gmover == true)
+                wsprintfW(string, L"생존시간 %d : %d", time / 60, time % 60);
+                TextOut(hdc, 650, 300, string, lstrlenW(string));
+            if (b_flag == true)
+            {
+                TextOut(hdc, 615, 700, L"날아오는 운석을 피해라..!", lstrlenW(L"날아오는 운석을 피해라..!"));
+            }
+            if (b_flag == false) {
+                if(b_gmover == false){
+                wsprintfW(string, L"생존 시간 %d : %d", time/60, time%60);
+                TextOut(hdc, 10, 10, string, lstrlenW(string));
+                wsprintfW(string, L"폭탄(Z) : %d", bomb);
+                TextOut(hdc, 10, 700, string, lstrlenW(string));
+                wsprintfW(string, L"치트(?) : %lc", cheat);
+                TextOut(hdc, 1300, 700, string, lstrlenW(string));
+                Rectangle(hdc, g_enemy.left, g_enemy.top, g_enemy.right, g_enemy.bottom);
+                }
             }
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             // 플레이어의 생성
@@ -297,8 +310,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
-        DestroyWindow(b_restart);
-        DestroyWindow(b_exit);
         DestroyWindow(b_start);
         PostQuitMessage(0);
         break;
