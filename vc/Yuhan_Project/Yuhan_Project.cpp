@@ -15,6 +15,9 @@
 #include "framework.h"
 #include "Yuhan_Project.h"
 
+#include <stdlib.h>     // 랜덤 값 획득 함수 호출
+#include <time.h>       // SEED 값 조절을 위해 현재 시간 값 이용
+
 #define MAX_LOADSTRING  100
 #define IDM_BTN_START   123
 
@@ -134,6 +137,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 //
 
+// 윈도우 크기 변수
+int Canvas_X = 1440;
+int Canvas_Y = 800;
+
 // 버튼을 위한 윈도우 핸들 선언
 HWND b_start;           // 게임을 시작하기 위한 버튼
 
@@ -143,11 +150,12 @@ HWND g_hWnd;
 int bomb = 3;
 
 // 생존 시간
-int time = 0;
+int atime = 0;
 
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
 RECT g_enemy; // 테스트
+
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
 
@@ -157,10 +165,93 @@ bool b_flag = true;
 // 게임오버인지 체크
 bool b_gmover = false;
 
-wchar_t cheat = 'X';
+WCHAR cheat = 'X';
 //타이머 아이디를 선언
 #define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
 
+// decidewall 0 = top 1 = right 2 = bottom 3 = left
+
+HANDLE g_mux;
+int dstX, dstY;
+DWORD WINAPI enemyspawn(LPVOID Param)
+{
+    // SEED 값 초기화
+    srand(time(NULL));
+    int decidewall = rand() % 4;
+    int x, y;
+
+    WaitForSingleObject(g_mux, INFINITE);
+        switch(decidewall)
+        {
+            case 0:
+                // 적이 위에서 생성되어 아래로 이동
+                x = 0;
+                y = rand() % Canvas_X;
+                
+                // 생성된 적의 경로 설정
+                dstX = rand() % Canvas_X;
+                dstY = Canvas_Y;
+                break;
+            case 1:
+                // 적이 오른쪽에서 생성되어 왼쪽으로 이동
+                x = Canvas_X;
+                y = rand() % Canvas_Y;
+                
+                // 생성된 적의 경로 설정
+                dstX = 0;
+                dstY = rand()%Canvas_Y;
+                break;
+            case 2:
+                // 적이 아래에서 생성되어 위로 이동
+                x = rand() % Canvas_X;
+                y = Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX = rand() % Canvas_X;
+                dstY = 0;
+                break;
+            case 3:
+                // 적이 왼쪽에서 생성되어 오른쪽으로 이동
+                x = 0;
+                y = rand() % Canvas_Y;
+                
+                // 생성된 적의 경로 설정
+                dstX = Canvas_X;
+                dstY = rand()%Canvas_Y;
+                break;
+        }
+        g_enemy.left = x;
+        g_enemy.top = y;
+        g_enemy.right = g_enemy.left + 15;
+        g_enemy.bottom = g_enemy.top + 15;
+
+        if (g_enemy.left < dstX)
+        {
+            g_enemy.left += 5;
+            g_enemy.right += 5;
+        }
+        else
+        {
+            g_enemy.left -= 5;
+            g_enemy.right -= 5;
+        }
+        if (g_enemy.top < dstY)
+        {
+            g_enemy.top -= 5;
+            g_enemy.bottom -= 5;
+        }
+        else
+        {
+            g_enemy.top += 5;
+            g_enemy.bottom += 5;
+        }
+        WCHAR Bufferw[] = { 0, };
+        wsprintfW(Bufferw, L"%d %d", dstX, dstY);
+        MessageBox((HWND)Param, Bufferw, Bufferw, 0);
+        ReleaseMutex(g_mux);
+        ExitThread(0);
+        return 0;
+}
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
@@ -170,7 +261,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
             case TIMER_ID_1:
-                time++;
+                atime++;
+                if(atime % 3 == 0) // 3초마다 enemyspawn 실행
+                {
+                    // SEED 값 초기화
+                    srand(time(NULL));
+                        CreateThread(NULL, 0, enemyspawn, (LPVOID)hWnd, 0, NULL);
+                }
                 if (b_gmover == true)
                 {
                     KillTimer(hWnd, TIMER_ID_1);
@@ -219,6 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
             InvalidateRect(hWnd, NULL, TRUE);
         }
+        
     }
         break;
     
@@ -243,9 +341,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+
     case WM_CREATE:
+        g_mux = CreateMutex(NULL, FALSE, NULL);
+        
+
         // 초기 화면값 설정
-        MoveWindow(hWnd, 100, 100, 1440, 800, true);
+        MoveWindow(hWnd, 100, 100, Canvas_X, Canvas_Y, true);
         // 게임 플레이어의 초기 좌표
         g_me.left = -1000;
         g_me.top  = -1000;
@@ -283,7 +385,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hFont = CreateFont(14, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT("HY나무M"));
             OldFont = (HFONT)SelectObject(hdc, hFont);
             if(b_gmover == true)
-                wsprintfW(string, L"생존시간 %d : %d", time / 60, time % 60);
+                wsprintfW(string, L"생존시간 %d : %d", atime / 60, atime % 60);
                 TextOut(hdc, 650, 300, string, lstrlenW(string));
             if (b_flag == true)
             {
@@ -291,13 +393,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
             if (b_flag == false) {
                 if(b_gmover == false){
-                wsprintfW(string, L"생존 시간 %d : %d", time/60, time%60);
+                wsprintfW(string, L"생존 시간 %d : %d", atime/60, atime%60);
                 TextOut(hdc, 10, 10, string, lstrlenW(string));
                 wsprintfW(string, L"폭탄(Z) : %d", bomb);
                 TextOut(hdc, 10, 700, string, lstrlenW(string));
                 wsprintfW(string, L"치트(?) : %lc", cheat);
                 TextOut(hdc, 1300, 700, string, lstrlenW(string));
-                Rectangle(hdc, g_enemy.left, g_enemy.top, g_enemy.right, g_enemy.bottom);
+                Ellipse(hdc, g_enemy.left, g_enemy.top, g_enemy.right, g_enemy.bottom);
                 }
             }
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
@@ -310,6 +412,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+        CloseHandle(g_mux);
         DestroyWindow(b_start);
         PostQuitMessage(0);
         break;
