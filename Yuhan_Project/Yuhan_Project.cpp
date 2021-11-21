@@ -148,13 +148,15 @@ HWND g_hWnd;
 
 // 폭탄
 int bomb = 3;
+bool bombst = false;
+int btime = 5;
 
 // 생존 시간
 int atime = 0;
 
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
-RECT g_enemy; // 테스트
+RECT g_enemy; // 
 
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
@@ -168,6 +170,7 @@ bool b_gmover = false;
 WCHAR cheat = 'X';
 //타이머 아이디를 선언
 #define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
+#define TIMER_ID_2          2   // 폭탄이 수행되는 시간
 
 // decidewall 0 = top 1 = right 2 = bottom 3 = left
 
@@ -175,79 +178,8 @@ HANDLE g_mux;
 int dstX, dstY;
 DWORD WINAPI enemyspawn(LPVOID Param)
 {
-    // SEED 값 초기화
-    srand(time(NULL));
-    int decidewall = rand() % 4;
-    int x, y;
+    
 
-    WaitForSingleObject(g_mux, INFINITE);
-        switch(decidewall)
-        {
-            case 0:
-                // 적이 위에서 생성되어 아래로 이동
-                x = 0;
-                y = rand() % Canvas_X;
-                
-                // 생성된 적의 경로 설정
-                dstX = rand() % Canvas_X;
-                dstY = Canvas_Y;
-                break;
-            case 1:
-                // 적이 오른쪽에서 생성되어 왼쪽으로 이동
-                x = Canvas_X;
-                y = rand() % Canvas_Y;
-                
-                // 생성된 적의 경로 설정
-                dstX = 0;
-                dstY = rand()%Canvas_Y;
-                break;
-            case 2:
-                // 적이 아래에서 생성되어 위로 이동
-                x = rand() % Canvas_X;
-                y = Canvas_Y;
-
-                // 생성된 적의 경로 설정
-                dstX = rand() % Canvas_X;
-                dstY = 0;
-                break;
-            case 3:
-                // 적이 왼쪽에서 생성되어 오른쪽으로 이동
-                x = 0;
-                y = rand() % Canvas_Y;
-                
-                // 생성된 적의 경로 설정
-                dstX = Canvas_X;
-                dstY = rand()%Canvas_Y;
-                break;
-        }
-        g_enemy.left = x;
-        g_enemy.top = y;
-        g_enemy.right = g_enemy.left + 15;
-        g_enemy.bottom = g_enemy.top + 15;
-
-        if (g_enemy.left < dstX)
-        {
-            g_enemy.left += 5;
-            g_enemy.right += 5;
-        }
-        else
-        {
-            g_enemy.left -= 5;
-            g_enemy.right -= 5;
-        }
-        if (g_enemy.top < dstY)
-        {
-            g_enemy.top -= 5;
-            g_enemy.bottom -= 5;
-        }
-        else
-        {
-            g_enemy.top += 5;
-            g_enemy.bottom += 5;
-        }
-        WCHAR Bufferw[] = { 0, };
-        wsprintfW(Bufferw, L"%d %d", dstX, dstY);
-        MessageBox((HWND)Param, Bufferw, Bufferw, 0);
         ReleaseMutex(g_mux);
         ExitThread(0);
         return 0;
@@ -261,37 +193,132 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
             case TIMER_ID_1:
+            {
                 atime++;
-                if(atime % 3 == 0) // 3초마다 enemyspawn 실행
+                int i = rand() % 10 + 3;
+                if (atime % 3 == 0) // 3초마다 enemyspawn 실행
                 {
-                    // SEED 값 초기화
                     srand(time(NULL));
-                        CreateThread(NULL, 0, enemyspawn, (LPVOID)hWnd, 0, NULL);
+                    int decidewall = rand() % 4;
+                    int x, y;
+
+                    switch (decidewall)
+                    {
+                    case 0:
+                        // 적이 위에서 생성되어 아래로 이동
+                        x = 0;
+                        y = rand() % Canvas_X;
+
+                        // 생성된 적의 경로 설정
+                        dstX = rand() % Canvas_X;
+                        dstY = Canvas_Y;
+                        break;
+
+                    case 1:
+                        // 적이 오른쪽에서 생성되어 왼쪽으로 이동
+                        x = Canvas_X;
+                        y = rand() % Canvas_Y;
+
+                        // 생성된 적의 경로 설정
+                        dstX = 0;
+                        dstY = rand() % Canvas_Y;
+                        break;
+
+                    case 2:
+                        // 적이 아래에서 생성되어 위로 이동
+                        x = rand() % Canvas_X;
+                        y = Canvas_Y;
+
+                        // 생성된 적의 경로 설정
+                        dstX = rand() % Canvas_X;
+                        dstY = 0;
+                        break;
+
+                    case 3:
+                        // 적이 왼쪽에서 생성되어 오른쪽으로 이동
+                        x = 0;
+                        y = rand() % Canvas_Y;
+
+                        // 생성된 적의 경로 설정
+                        dstX = Canvas_X;
+                        dstY = rand() % Canvas_Y;
+                        break;
+                    }
+
+                    // 
+                    g_enemy.left = x;
+                    g_enemy.top = y;
+                    g_enemy.right = g_enemy.left + 15;
+                    g_enemy.bottom = g_enemy.top + 15;
+
+                    if (g_enemy.left < dstX)
+                    {
+                        g_enemy.left += 5;
+                        g_enemy.right += 5;
+                    }
+                    else
+                    {
+                        g_enemy.left -= 5;
+                        g_enemy.right -= 5;
+                    }
+                    if (g_enemy.top < dstY)
+                    {
+                        g_enemy.top -= 5;
+                        g_enemy.bottom -= 5;
+                    }
+                    else
+                    {
+                        g_enemy.top += 5;
+                        g_enemy.bottom += 5;
+                    }
                 }
                 if (b_gmover == true)
                 {
                     KillTimer(hWnd, TIMER_ID_1);
-
                 }
-                break;
+            }
+            break;
+
+            case TIMER_ID_2:
+            {
+                btime--;
+                if (btime <= 0)
+                {
+                    g_me.left += 20;
+                    g_me.top += 20;
+                    g_me.right -= 20;
+                    g_me.bottom -= 20;
+                    bombst = false;
+                    btime = 5;
+                    KillTimer(hWnd, TIMER_ID_2);
+                }
+            }
+            break;
         }
         break;
     case WM_KEYDOWN:
         switch (wParam)
         {
             case 0x5A: // Z키 입력시 g_bomb의 크기가 일시적으로 커졌다 원래 크기로 돌아감
-                if(bomb > 0)
+                if (bomb > 0)
                 {
                     bomb--;
-
+                    bombst = true;
                 }
+                SetTimer(hWnd, TIMER_ID_2, 1000, NULL);
                 break;
             case 0x58: // X키 입력시 g_bomb이 활성화 / invisible 상태
                 if (cheat == 'X')
+                {
                     cheat = 'O';
+                    bombst = true;
+                }
                 else
+                {
                     cheat = 'X';
-                break;
+                    bombst = false;
+                }
+                    break;
         }
 
     case WM_MOUSEMOVE:
@@ -309,10 +336,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_me.top = y - 10;
             g_me.right = x + 10;
             g_me.bottom = y + 10;
+
+            if (bombst)
+            {
+                g_me.left -= 20;
+                g_me.top -= 20;
+                g_me.right = g_me.left + 40;
+                g_me.bottom = g_me.top + 40;
+            }
+
             if (TRUE == IntersectRect(&dst, &g_me, &g_enemy))     // 좌표 겹침이 존재한다면
             {
-                b_gmover = true;
-                ShowCursor(true);
+                if(bombst == false)
+                {
+                    b_gmover = true;
+                    ShowCursor(true);
+                }
             }
             InvalidateRect(hWnd, NULL, TRUE);
         }
@@ -343,7 +382,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_CREATE:
-        g_mux = CreateMutex(NULL, FALSE, NULL);
         
 
         // 초기 화면값 설정
@@ -405,6 +443,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             // 플레이어의 생성
             Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
+            
             SelectObject(hdc, OldFont);
             DeleteObject(hFont);
             
