@@ -156,15 +156,12 @@ int atime = 0;
 
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
-RECT g_enemy[20]; // 
+RECT g_enemy[50]; // 
 
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
 
-// 적의 생성위치
-int x, y;
-// 적의 이동좌표
-int dstX, dstY;
+
 
 // b_start가 생성된 상태인지 체크
 bool b_flag = true; 
@@ -181,59 +178,63 @@ WCHAR cheat = 'X';
 
 HANDLE g_mux;
 
-
-
 DWORD WINAPI enemyspawn(LPVOID Param)
 {
     static HWND g_hWnd;
     int enenum = (int)Param;
+    // 적의 생성위치
+    int x, y;
+
+    // 적의 이동좌표
+    int dstX, dstY;
     WCHAR buffe[128] = { 0, };
-    WaitForSingleObject(g_mux, INFINITE);
-    int decidewall = rand() % 4;
+    
+    
+    for (int i = 0; i < enenum; i++)
+    {
+        int decidewall = rand() % 4;
+            if (decidewall == 0)
+            {
+                // 적이 위에서 생성되어 아래로 이동
+                x = rand() % Canvas_X;
+                y = 0;
 
-        if (decidewall == 0)
-        {
-            // 적이 위에서 생성되어 아래로 이동
-            x = 0;
-            y = rand() % Canvas_X;
+                // 생성된 적의 경로 설정
+                dstX = rand() % Canvas_X;
+                dstY = Canvas_Y;
+            }
+            else if (decidewall == 1)
+            {
+                // 적이 오른쪽에서 생성되어 왼쪽으로 이동
+                x = Canvas_X;
+                y = rand() % Canvas_Y;
 
-            // 생성된 적의 경로 설정
-            dstX = rand() % Canvas_X;
-            dstY = Canvas_Y;
-        }
-        else if (decidewall == 1)
-        {
-            // 적이 오른쪽에서 생성되어 왼쪽으로 이동
-            x = Canvas_X;
-            y = rand() % Canvas_Y;
+                // 생성된 적의 경로 설정
+                dstX = 0;
+                dstY = rand() % Canvas_Y;
+            }
+            else if (decidewall == 2)
+            {
+                // 적이 아래에서 생성되어 위로 이동
+                x = rand() % Canvas_X;
+                y = Canvas_Y;
 
-            // 생성된 적의 경로 설정
-            dstX = 0;
-            dstY = rand() % Canvas_Y;
-        }
-        else if (decidewall == 2)
-        {
-            // 적이 아래에서 생성되어 위로 이동
-            x = rand() % Canvas_X;
-            y = Canvas_Y;
+                // 생성된 적의 경로 설정
+                dstX = rand() % Canvas_X;
+                dstY = 0;
+            }
+            else if (decidewall == 3)
+            {
+                // 적이 왼쪽에서 생성되어 오른쪽으로 이동
+                x = 0;
+                y = rand() % Canvas_Y;
 
-            // 생성된 적의 경로 설정
-            dstX = rand() % Canvas_X;
-            dstY = 0;
-        }
-        else if (decidewall == 3)
-        {
-            // 적이 왼쪽에서 생성되어 오른쪽으로 이동
-            x = 0;
-            y = rand() % Canvas_Y;
+                // 생성된 적의 경로 설정
+                dstX = Canvas_X;
+                dstY = rand() % Canvas_Y;
 
-            // 생성된 적의 경로 설정
-            dstX = Canvas_X;
-            dstY = rand() % Canvas_Y;
+            }
 
-        }
-        for (int i = 0; i < enenum; i++)
-        {
             g_enemy[i].left = x;
             g_enemy[i].top = y;
             g_enemy[i].right = g_enemy[i].left + 15;
@@ -248,21 +249,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE:
+        g_hWnd = hWnd;
+        srand(time(NULL));
+        // 초기 화면값 설정
+        MoveWindow(hWnd, 0, 0, Canvas_X, Canvas_Y, true);
+        // 게임 플레이어의 초기 좌표
+        g_me.left = -1000;
+        g_me.top = -1000;
+        g_me.right = g_me.left + 20;
+        g_me.bottom = g_me.top + 20;
+
+
+        for (int i = 0; i < sizeof(g_enemy) / sizeof(RECT); i++)
+        {
+            g_enemy[i].left = -50;
+            g_enemy[i].top = -50;
+            g_enemy[i].right = g_enemy[i].left + 20;
+            g_enemy[i].bottom = g_enemy[i].top + 20;
+        }
+
+
+        // 게임시작 버튼
+        b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
+
+        SetTimer(hWnd, TIMER_ID_1, 1000, NULL);
+        break;
     case WM_TIMER:
         switch (wParam)
         {
             case TIMER_ID_1:
             {
                 atime++;
+                // 나타나는 적의 숫자
                 int enemynum = rand() % 10 + 3;
                 if (atime % 3 == 0) // 3초마다 enemyspawn 실행
                 {
                     CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
                 }
+
                 if (b_gmover == true)
                 {
                     KillTimer(hWnd, TIMER_ID_1);
+                    atime = 0;
                 }
+                InvalidateRect(hWnd, NULL, TRUE);
             }
             break;
 
@@ -372,35 +403,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
-    case WM_CREATE:
-        g_hWnd = hWnd;
-        srand(time(NULL));
-        // 초기 화면값 설정
-        MoveWindow(hWnd, 100, 100, Canvas_X, Canvas_Y, true);
-        // 게임 플레이어의 초기 좌표
-        g_me.left = -1000;
-        g_me.top  = -1000;
-        g_me.right = g_me.left + 20;
-        g_me.bottom = g_me.top + 20;
-
-        canvas.left = 50;
-        canvas.top = 50;
-        canvas.right = 1380;
-        canvas.bottom = Canvas_Y - 150;
-
-
-        for(int i = 0 ; i < sizeof(g_enemy)/sizeof(RECT); i++)
-        {
-        g_enemy[i].left = -50;
-        g_enemy[i].top = -50;
-        g_enemy[i].right = g_enemy[i].left + 20;
-        g_enemy[i].bottom = g_enemy[i].top + 20;
-        }
-        // 게임시작 버튼
-            b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
-            
-            SetTimer(hWnd, TIMER_ID_1, 1000, NULL);
-        break;
+    
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
@@ -431,7 +434,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     TextOut(hdc, 10, 700, string, lstrlenW(string));
                     wsprintfW(string, L"치트(?) : %lc", cheat);
                     TextOut(hdc, 1300, 700, string, lstrlenW(string));
-                    for(int i=0 ; i < sizeof(g_enemy) / sizeof(RECT) ; i++)
+                    for(int i = 0 ; i < sizeof(g_enemy) / sizeof(RECT) ; i++)
                             Ellipse(hdc, g_enemy[i].left, g_enemy[i].top, g_enemy[i].right, g_enemy[i].bottom);
                 }
             }
