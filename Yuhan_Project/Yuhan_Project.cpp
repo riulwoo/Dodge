@@ -161,6 +161,11 @@ RECT g_enemy[20]; //
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
 
+// 적의 생성위치
+int x, y;
+// 적의 이동좌표
+int dstX, dstY;
+
 // b_start가 생성된 상태인지 체크
 bool b_flag = true; 
 
@@ -175,7 +180,7 @@ WCHAR cheat = 'X';
 // decidewall 0 = top 1 = right 2 = bottom 3 = left
 
 HANDLE g_mux;
-int dstX, dstY;
+
 
 
 DWORD WINAPI enemyspawn(LPVOID Param)
@@ -183,10 +188,9 @@ DWORD WINAPI enemyspawn(LPVOID Param)
     static HWND g_hWnd;
     int enenum = (int)Param;
     WCHAR buffe[128] = { 0, };
-    
-        WaitForSingleObject(g_mux, INFINITE);
-        int decidewall = rand() % 1000;
-        int x, y;
+    WaitForSingleObject(g_mux, INFINITE);
+    int decidewall = rand() % 4;
+
         if (decidewall == 0)
         {
             // 적이 위에서 생성되어 아래로 이동
@@ -230,10 +234,10 @@ DWORD WINAPI enemyspawn(LPVOID Param)
         }
         for (int i = 0; i < enenum; i++)
         {
-        g_enemy[i].left = x;
-        g_enemy[i].top = y;
-        g_enemy[i].right = g_enemy[i].left + 15;
-        g_enemy[i].bottom = g_enemy[i].top + 15;
+            g_enemy[i].left = x;
+            g_enemy[i].top = y;
+            g_enemy[i].right = g_enemy[i].left + 15;
+            g_enemy[i].bottom = g_enemy[i].top + 15;
         }
 
         ReleaseMutex(g_mux);
