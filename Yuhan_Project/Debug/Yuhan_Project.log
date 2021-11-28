@@ -1,3 +1,3 @@
 ﻿  Yuhan_Project.cpp
-D:\2021_Yuhan\2학기\프로젝트\Yuhan_Project_VC++\Yuhan_Project\Yuhan_Project.cpp(201,31): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+D:\2021_Yuhan\2학기\프로젝트\Yuhan_Project_VC++\Yuhan_Project\Yuhan_Project.cpp(421,19): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   Yuhan_Project.vcxproj -> D:\2021_Yuhan\2학기\프로젝트\Yuhan_Project_VC++\Debug\Yuhan_Project.exe
