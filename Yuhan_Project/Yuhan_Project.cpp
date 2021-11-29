@@ -153,15 +153,17 @@ int btime = 5;
 
 // 생존 시간
 int atime = 0;
-
+int enemynum;
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
-RECT g_enemy[50]; // 
+RECT g_enemy1[20];
+RECT g_enemy2[20];
+RECT g_enemy3[20];
 
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
 
-
+int cnt=0;
 
 // b_start가 생성된 상태인지 체크
 bool b_flag = true; 
@@ -178,20 +180,26 @@ WCHAR cheat = 'X';
 
 HANDLE g_mux;
 
+// 적의 생성위치
+int x = 0, y = 0;
+
+// 적의 이동좌표
+int dstX = 0, dstY = 0;
+
+
+
 DWORD WINAPI enemyspawn(LPVOID Param)
 {
+    srand((unsigned int)time(NULL));
     static HWND g_hWnd;
     int enenum = (int)Param;
-    // 적의 생성위치
-    int x, y;
-
-    // 적의 이동좌표
-    int dstX, dstY;
+    // 메시지 테스트용 버퍼
     WCHAR buffe[128] = { 0, };
     
     
-    for (int i = 0; i < enenum; i++)
+    for (int i = 0; i < 20; i++)
     {
+        WaitForSingleObject(g_mux, INFINITE);
         int decidewall = rand() % 4;
             if (decidewall == 0)
             {
@@ -202,6 +210,7 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 // 생성된 적의 경로 설정
                 dstX = rand() % Canvas_X;
                 dstY = Canvas_Y;
+                
             }
             else if (decidewall == 1)
             {
@@ -234,13 +243,128 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 dstY = rand() % Canvas_Y;
 
             }
+            //////////////////////////////////////////////end of set to enemy's location////////////////////////////////////////////////////////////////
+            if(cnt % 3 == 1)
+            {
+            g_enemy1[i].left = x;
+            g_enemy1[i].top = y;
+            g_enemy1[i].right = g_enemy1[i].left + 20;
+            g_enemy1[i].bottom = g_enemy1[i].top + 20;
 
-            g_enemy[i].left = x;
-            g_enemy[i].top = y;
-            g_enemy[i].right = g_enemy[i].left + 15;
-            g_enemy[i].bottom = g_enemy[i].top + 15;
+            
+                    // x 좌표에 대한 비교 : 나와 상대 값을 이용
+                    if (g_enemy1[i].left < dstX)     // 참: 나는 상대의 왼쪽에 있다!
+                    {
+                        // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
+                        // x좌표의 감소
+                        g_enemy1[i].left -= 10;
+                        g_enemy1[i].right -= 10;
+                    }   
+                    else // 거짓 : 나는 상대의 오른쪽에 있다.
+                    {
+                            // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
+                            // x좌표의 증가
+                            g_enemy1[i].left += 10;
+                            g_enemy1[i].right += 10;
+                    }
+
+                    // y 좌표에 대한 비교 : 나와 상대 값을 이용
+                    if (g_enemy1[i].top < dstY)        // 참: 나는 상대의 위쪽에 있다.
+                    {
+                            // 상대는 추적을 위해 위쪽으로 이동
+                            g_enemy1[i].top -= 10;
+                            g_enemy1[i].bottom -= 10;
+                    }
+                    else
+                    {
+                            g_enemy1[i].top += 10;
+                            g_enemy1[i].bottom += 10;
+                    }
+
+     
+            }
+            if (cnt % 3 == 2)
+            {
+                g_enemy2[i].left = x;
+                g_enemy2[i].top = y;
+                g_enemy2[i].right = g_enemy2[i].left + 20;
+                g_enemy2[i].bottom = g_enemy2[i].top + 20;
+
+                // x 좌표에 대한 비교 : 나와 상대 값을 이용
+                if (g_enemy2[i].left < dstX)     // 참: 나는 상대의 왼쪽에 있다!
+                {
+                        // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
+                        // x좌표의 감소
+                        g_enemy2[i].left -= 10;
+                        g_enemy2[i].right -= 10;
+
+                }   // 거짓 : 나는 상대의 오른쪽에 있다.
+                else
+                {
+                        // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
+                        // x좌표의 증가
+                        g_enemy2[i].left += 10;
+                        g_enemy2[i].right += 10;
+                }
+
+                // y 좌표에 대한 비교 : 나와 상대 값을 이용
+                if (g_enemy2[i].top < dstY)        // 참: 나는 상대의 위쪽에 있다.
+                {
+                        // 상대는 추적을 위해 위쪽으로 이동
+                        g_enemy2[i].top -= 10;
+                        g_enemy2[i].bottom -= 10;
+                }
+                else
+                {
+
+                        g_enemy2[i].top += 10;
+                        g_enemy2[i].bottom += 10;
+
+                }
+            }
+            if (cnt % 3 == 0)
+            {
+                g_enemy3[i].left = x;
+                g_enemy3[i].top = y;
+                g_enemy3[i].right = g_enemy3[i].left + 20;
+                g_enemy3[i].bottom = g_enemy3[i].top + 20;
+
+                // x 좌표에 대한 비교 : 나와 상대 값을 이용
+                if (g_enemy3[i].left < dstX)     // 참: 나는 상대의 왼쪽에 있다!
+                {
+
+                        // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
+                        // x좌표의 감소
+                        g_enemy3[i].left -= 10;
+                        g_enemy3[i].right -= 10;
+
+                }   // 거짓 : 나는 상대의 오른쪽에 있다.
+                else
+                {
+
+                        // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
+                        // x좌표의 증가
+                        g_enemy3[i].left += 10;
+                        g_enemy3[i].right += 10;
+
+                }
+
+                // y 좌표에 대한 비교 : 나와 상대 값을 이용
+                if (g_enemy3[i].top < dstY)        // 참: 나는 상대의 위쪽에 있다.
+                {
+
+                        // 상대는 추적을 위해 위쪽으로 이동
+                        g_enemy3[i].top -= 10;
+                        g_enemy3[i].bottom -= 10;
+
+                }
+                else
+                {
+                        g_enemy3[i].top += 10;
+                        g_enemy3[i].bottom += 10;
+                }
+            }
         }
-
         ReleaseMutex(g_mux);
         ExitThread(0);
         return 0;
@@ -251,7 +375,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
         g_hWnd = hWnd;
-        srand(time(NULL));
+        srand((unsigned int)time(NULL));
         // 초기 화면값 설정
         MoveWindow(hWnd, 0, 0, Canvas_X, Canvas_Y, true);
         // 게임 플레이어의 초기 좌표
@@ -261,12 +385,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_me.bottom = g_me.top + 20;
 
 
-        for (int i = 0; i < sizeof(g_enemy) / sizeof(RECT); i++)
+        for (int i = 0; i < sizeof(g_enemy1) / sizeof(RECT); i++)
         {
-            g_enemy[i].left = -50;
-            g_enemy[i].top = -50;
-            g_enemy[i].right = g_enemy[i].left + 20;
-            g_enemy[i].bottom = g_enemy[i].top + 20;
+            g_enemy1[i].left = -50;
+            g_enemy1[i].top = -50;
+            g_enemy1[i].right = g_enemy1[i].left + 20;
+            g_enemy1[i].bottom = g_enemy1[i].top + 20;
+
+            g_enemy2[i].left = -50;
+            g_enemy2[i].top = -50;
+            g_enemy2[i].right = g_enemy2[i].left + 20;
+            g_enemy2[i].bottom = g_enemy2[i].top + 20;
+
+            g_enemy3[i].left = -50;
+            g_enemy3[i].top = -50;
+            g_enemy3[i].right = g_enemy3[i].left + 20;
+            g_enemy3[i].bottom = g_enemy3[i].top + 20;
         }
 
 
@@ -274,24 +408,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
 
         SetTimer(hWnd, TIMER_ID_1, 1000, NULL);
+        if (b_flag == false)
+        {
+            CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
+        }
         break;
     case WM_TIMER:
         switch (wParam)
         {
             case TIMER_ID_1:
             {
+                WCHAR buffe[128] = { 0, };
                 atime++;
+                
                 // 나타나는 적의 숫자
-                int enemynum = rand() % 10 + 3;
-                if (atime % 3 == 0) // 3초마다 enemyspawn 실행
+                enemynum = rand() % 10 + 3;
+                if (atime % 0  == 0) // 3초마다 enemyspawn 실행
                 {
                     CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
+                    cnt++;
                 }
-
+               
                 if (b_gmover == true)
                 {
                     KillTimer(hWnd, TIMER_ID_1);
-                    atime = 0;
                 }
                 InvalidateRect(hWnd, NULL, TRUE);
             }
@@ -366,9 +506,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 g_me.bottom = g_me.top + 40;
             }
 
-            if (TRUE == IntersectRect(&dst, &g_me, g_enemy))     // 좌표 겹침이 존재한다면
+            if (TRUE == IntersectRect(&dst, &g_me, g_enemy1))     // 좌표 겹침이 존재한다면
             {
                 if(bombst == false)
+                {
+                    b_gmover = true;
+                    ShowCursor(true);
+                }
+            }
+            if (TRUE == IntersectRect(&dst, &g_me, g_enemy2))     // 좌표 겹침이 존재한다면
+            {
+                if (bombst == false)
+                {
+                    b_gmover = true;
+                    ShowCursor(true);
+                }
+            }
+            if (TRUE == IntersectRect(&dst, &g_me, g_enemy3))     // 좌표 겹침이 존재한다면
+            {
+                if (bombst == false)
                 {
                     b_gmover = true;
                     ShowCursor(true);
@@ -389,7 +545,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_BTN_START:
                 DestroyWindow(b_start);
                 b_flag = false;
-                
+                CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
                 break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -426,27 +582,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 TextOut(hdc, 615, 700, L"날아오는 운석을 피해라..!", lstrlenW(L"날아오는 운석을 피해라..!"));
             }
             if (b_flag == false) {
-                if(b_gmover == false){
+                if (b_gmover == false) {
                     Rectangle(hdc, canvas.left, canvas.top, canvas.right, canvas.bottom);
-                    wsprintfW(string, L"생존 시간 %d : %d", atime/60, atime%60);
+                    wsprintfW(string, L"생존 시간 %d : %d", atime / 60, atime % 60);
                     TextOut(hdc, 10, 10, string, lstrlenW(string));
                     wsprintfW(string, L"폭탄(Z) : %d", bomb);
                     TextOut(hdc, 10, 700, string, lstrlenW(string));
                     wsprintfW(string, L"치트(?) : %lc", cheat);
                     TextOut(hdc, 1300, 700, string, lstrlenW(string));
-                    for(int i = 0 ; i < sizeof(g_enemy) / sizeof(RECT) ; i++)
-                            Ellipse(hdc, g_enemy[i].left, g_enemy[i].top, g_enemy[i].right, g_enemy[i].bottom);
+                    for (int i = 0; i < sizeof(g_enemy1) / sizeof(RECT); i++)
+                    {
+                        Ellipse(hdc, g_enemy1[i].left, g_enemy1[i].top, g_enemy1[i].right, g_enemy1[i].bottom);
+                        Ellipse(hdc, g_enemy2[i].left, g_enemy2[i].top, g_enemy2[i].right, g_enemy2[i].bottom);
+                        Ellipse(hdc, g_enemy3[i].left, g_enemy3[i].top, g_enemy3[i].right, g_enemy3[i].bottom);
+                    }
                 }
             }
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             // 플레이어의 생성
             Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
-
-
-
             EndPaint(hWnd, &ps);
         }
         break;
+
     case WM_DESTROY:
         CloseHandle(g_mux);
         DestroyWindow(b_start);
