@@ -154,11 +154,10 @@ int btime = 5;
 // 생존 시간
 int atime = 0;
 int enemynum;
+
 // 플레이어와 폭탄의 좌표 선언
 RECT g_me, g_bomb;
-RECT g_enemy1[20];
-RECT g_enemy2[20];
-RECT g_enemy3[20];
+RECT g_enemy[3][50] = { 0, };
 
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
@@ -175,16 +174,17 @@ WCHAR cheat = 'X';
 //타이머 아이디를 선언
 #define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
 #define TIMER_ID_2          2   // 폭탄이 수행되는 시간
-
+#define TIMER_ID_ENEMYMOVE  3   // 적의 이동하는 속도
 // decidewall 0 = top 1 = right 2 = bottom 3 = left
 
 HANDLE g_mux;
 
 // 적의 생성위치
-int x = 0, y = 0;
+int x[50] = { 0 };
+int y[50] = { 0 };
 
 // 적의 이동좌표
-int dstX = 0, dstY = 0;
+int dstX[50] = { 0 }, dstY[50] = { 0 };
 
 
 
@@ -193,182 +193,85 @@ DWORD WINAPI enemyspawn(LPVOID Param)
     srand((unsigned int)time(NULL));
     static HWND g_hWnd;
     int enenum = (int)Param;
+    int decidewall;
     // 메시지 테스트용 버퍼
     WCHAR buffe[128] = { 0, };
-    
-    
-    for (int i = 0; i < 20; i++)
+
+    for(int t =0 ; t < 100 ; t++)
     {
         WaitForSingleObject(g_mux, INFINITE);
-        int decidewall = rand() % 4;
+        for (int i = 0; i < 50; i++)
+        {
+            decidewall = rand() % 9;
             if (decidewall == 0)
             {
                 // 적이 위에서 생성되어 아래로 이동
-                x = rand() % Canvas_X;
-                y = 0;
+                x[i] = rand() % Canvas_X;
+                y[i] = 0;
 
                 // 생성된 적의 경로 설정
-                dstX = rand() % Canvas_X;
-                dstY = Canvas_Y;
-                
+                dstX[i] = rand() % Canvas_X;
+                dstY[i] = Canvas_Y;
+            }
+            else if (decidewall == 4)
+            {
+                // 적이 오른쪽에서 생성되어 위쪽으로 이동
+                x[i] = Canvas_X;
+                y[i] = rand() % Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = rand() % Canvas_X;
+                dstY[i] = 0;
             }
             else if (decidewall == 1)
             {
                 // 적이 오른쪽에서 생성되어 왼쪽으로 이동
-                x = Canvas_X;
-                y = rand() % Canvas_Y;
+                x[i] = Canvas_X;
+                y[i] = rand() % Canvas_Y;
 
                 // 생성된 적의 경로 설정
-                dstX = 0;
-                dstY = rand() % Canvas_Y;
+                dstX[i] = 0;
+                dstY[i] = rand() % Canvas_Y;
             }
             else if (decidewall == 2)
             {
                 // 적이 아래에서 생성되어 위로 이동
-                x = rand() % Canvas_X;
-                y = Canvas_Y;
+                x[i] = rand() % Canvas_X;
+                y[i] = Canvas_Y;
 
                 // 생성된 적의 경로 설정
-                dstX = rand() % Canvas_X;
-                dstY = 0;
+                dstX[i] = rand() % Canvas_X;
+                dstY[i] = 0;
             }
             else if (decidewall == 3)
             {
                 // 적이 왼쪽에서 생성되어 오른쪽으로 이동
-                x = 0;
-                y = rand() % Canvas_Y;
+                x[i] = 0;
+                y[i] = rand() % Canvas_Y;
 
                 // 생성된 적의 경로 설정
-                dstX = Canvas_X;
-                dstY = rand() % Canvas_Y;
-
-            }
-            //////////////////////////////////////////////end of set to enemy's location////////////////////////////////////////////////////////////////
-            if(cnt % 3 == 1)
-            {
-            g_enemy1[i].left = x;
-            g_enemy1[i].top = y;
-            g_enemy1[i].right = g_enemy1[i].left + 20;
-            g_enemy1[i].bottom = g_enemy1[i].top + 20;
-
-            
-                    // x 좌표에 대한 비교 : 나와 상대 값을 이용
-                    if (g_enemy1[i].left < dstX)     // 참: 나는 상대의 왼쪽에 있다!
-                    {
-                        // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
-                        // x좌표의 감소
-                        g_enemy1[i].left -= 10;
-                        g_enemy1[i].right -= 10;
-                    }   
-                    else // 거짓 : 나는 상대의 오른쪽에 있다.
-                    {
-                            // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
-                            // x좌표의 증가
-                            g_enemy1[i].left += 10;
-                            g_enemy1[i].right += 10;
-                    }
-
-                    // y 좌표에 대한 비교 : 나와 상대 값을 이용
-                    if (g_enemy1[i].top < dstY)        // 참: 나는 상대의 위쪽에 있다.
-                    {
-                            // 상대는 추적을 위해 위쪽으로 이동
-                            g_enemy1[i].top -= 10;
-                            g_enemy1[i].bottom -= 10;
-                    }
-                    else
-                    {
-                            g_enemy1[i].top += 10;
-                            g_enemy1[i].bottom += 10;
-                    }
-
-     
-            }
-            if (cnt % 3 == 2)
-            {
-                g_enemy2[i].left = x;
-                g_enemy2[i].top = y;
-                g_enemy2[i].right = g_enemy2[i].left + 20;
-                g_enemy2[i].bottom = g_enemy2[i].top + 20;
-
-                // x 좌표에 대한 비교 : 나와 상대 값을 이용
-                if (g_enemy2[i].left < dstX)     // 참: 나는 상대의 왼쪽에 있다!
-                {
-                        // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
-                        // x좌표의 감소
-                        g_enemy2[i].left -= 10;
-                        g_enemy2[i].right -= 10;
-
-                }   // 거짓 : 나는 상대의 오른쪽에 있다.
-                else
-                {
-                        // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
-                        // x좌표의 증가
-                        g_enemy2[i].left += 10;
-                        g_enemy2[i].right += 10;
-                }
-
-                // y 좌표에 대한 비교 : 나와 상대 값을 이용
-                if (g_enemy2[i].top < dstY)        // 참: 나는 상대의 위쪽에 있다.
-                {
-                        // 상대는 추적을 위해 위쪽으로 이동
-                        g_enemy2[i].top -= 10;
-                        g_enemy2[i].bottom -= 10;
-                }
-                else
-                {
-
-                        g_enemy2[i].top += 10;
-                        g_enemy2[i].bottom += 10;
-
-                }
-            }
-            if (cnt % 3 == 0)
-            {
-                g_enemy3[i].left = x;
-                g_enemy3[i].top = y;
-                g_enemy3[i].right = g_enemy3[i].left + 20;
-                g_enemy3[i].bottom = g_enemy3[i].top + 20;
-
-                // x 좌표에 대한 비교 : 나와 상대 값을 이용
-                if (g_enemy3[i].left < dstX)     // 참: 나는 상대의 왼쪽에 있다!
-                {
-
-                        // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
-                        // x좌표의 감소
-                        g_enemy3[i].left -= 10;
-                        g_enemy3[i].right -= 10;
-
-                }   // 거짓 : 나는 상대의 오른쪽에 있다.
-                else
-                {
-
-                        // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
-                        // x좌표의 증가
-                        g_enemy3[i].left += 10;
-                        g_enemy3[i].right += 10;
-
-                }
-
-                // y 좌표에 대한 비교 : 나와 상대 값을 이용
-                if (g_enemy3[i].top < dstY)        // 참: 나는 상대의 위쪽에 있다.
-                {
-
-                        // 상대는 추적을 위해 위쪽으로 이동
-                        g_enemy3[i].top -= 10;
-                        g_enemy3[i].bottom -= 10;
-
-                }
-                else
-                {
-                        g_enemy3[i].top += 10;
-                        g_enemy3[i].bottom += 10;
-                }
+                dstX[i] = Canvas_X;
+                dstY[i] = rand() % Canvas_Y;
             }
         }
-        ReleaseMutex(g_mux);
-        ExitThread(0);
-        return 0;
+
+            //////////////////////////////////////////////end of set to enemy's location////////////////////////////////////////////////////////////////
+        for (int j = 0; j < 3; j++)
+        {
+            for (int i = 0; i < 50; i++)
+            {
+                g_enemy[j][i].left = x[i];
+                g_enemy[j][i].top = y[i];
+                g_enemy[j][i].right = g_enemy[j][i].left + 20;
+                g_enemy[j][i].bottom = g_enemy[j][i].top + 20;
+            }
+        }
+    }
+    ReleaseMutex(g_mux);
+    ExitThread(0);
+    return 0;
 }
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -384,25 +287,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_me.right = g_me.left + 20;
         g_me.bottom = g_me.top + 20;
 
-
-        for (int i = 0; i < sizeof(g_enemy1) / sizeof(RECT); i++)
+        for (int j = 0; j < 3; j++)
         {
-            g_enemy1[i].left = -50;
-            g_enemy1[i].top = -50;
-            g_enemy1[i].right = g_enemy1[i].left + 20;
-            g_enemy1[i].bottom = g_enemy1[i].top + 20;
+            for (int i = 0; i < 50; i++)
+            {
+                g_enemy[j][i].left = -500;
+                g_enemy[j][i].top = -500;
+                g_enemy[j][i].right = g_enemy[j][i].left + 20;
+                g_enemy[j][i].bottom = g_enemy[j][i].top + 20;
 
-            g_enemy2[i].left = -50;
-            g_enemy2[i].top = -50;
-            g_enemy2[i].right = g_enemy2[i].left + 20;
-            g_enemy2[i].bottom = g_enemy2[i].top + 20;
+                g_enemy[j][i].left = -500;
+                g_enemy[j][i].top = -500;
+                g_enemy[j][i].right = g_enemy[j][i].left + 20;
+                g_enemy[j][i].bottom = g_enemy[j][i].top + 20;
 
-            g_enemy3[i].left = -50;
-            g_enemy3[i].top = -50;
-            g_enemy3[i].right = g_enemy3[i].left + 20;
-            g_enemy3[i].bottom = g_enemy3[i].top + 20;
+                g_enemy[j][i].left = -500;
+                g_enemy[j][i].top = -500;
+                g_enemy[j][i].right = g_enemy[j][i].left + 20;
+                g_enemy[j][i].bottom = g_enemy[j][i].top + 20;
+            }
         }
-
 
         // 게임시작 버튼
         b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
@@ -411,24 +315,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (b_flag == false)
         {
             CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
+            
         }
+        SetTimer(hWnd, TIMER_ID_ENEMYMOVE, 100, NULL);
         break;
     case WM_TIMER:
         switch (wParam)
         {
             case TIMER_ID_1:
             {
-                WCHAR buffe[128] = { 0, };
                 atime++;
-                
-                // 나타나는 적의 숫자
-                enemynum = rand() % 10 + 3;
-                if (atime % 0  == 0) // 3초마다 enemyspawn 실행
+                if (atime % 10 == 0)
                 {
                     CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
-                    cnt++;
+
                 }
-               
+                
                 if (b_gmover == true)
                 {
                     KillTimer(hWnd, TIMER_ID_1);
@@ -452,6 +354,43 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
+
+            case TIMER_ID_ENEMYMOVE:
+                for (int j = 0; j < 3; j++)
+                {
+                    for (int i = 0; i < 50; i++)
+                    {
+                        // x 좌표에 대한 비교 : 나와 상대 값을 이용
+                        if (g_enemy[j][i].left > dstX[i])     // 참: 나는 상대의 왼쪽에 있다!
+                        {
+                            // 상대는 추적하기 위해 왼쪽으로 이동해야 한다.
+                            // x좌표의 감소
+                            g_enemy[j][i].left -= 10;
+                            g_enemy[j][i].right -= 10;
+                        }
+                        else // 거짓 : 나는 상대의 오른쪽에 있다.
+                        {
+                            // 상대는 추적하기 위해 오른쪽으로 이동해야 한다.
+                            // x좌표의 증가
+                            g_enemy[j][i].left += 10;
+                            g_enemy[j][i].right += 10;
+                        }
+
+                        // y 좌표에 대한 비교 : 나와 상대 값을 이용
+                        if (g_enemy[j][i].top > dstY[i])        // 참: 나는 상대의 위쪽에 있다.
+                        {
+                            // 상대는 추적을 위해 위쪽으로 이동
+                            g_enemy[j][i].top -= 10;
+                            g_enemy[j][i].bottom -= 10;
+                        }
+                        else
+                        {
+                            g_enemy[j][i].top += 10;
+                            g_enemy[j][i].bottom += 10;
+                        }
+                    }
+                }
+                break;
         }
         break;
     case WM_KEYDOWN:
@@ -506,25 +445,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 g_me.bottom = g_me.top + 40;
             }
 
-            if (TRUE == IntersectRect(&dst, &g_me, g_enemy1))     // 좌표 겹침이 존재한다면
+            if (TRUE == IntersectRect(&dst, &g_me, *g_enemy))     // 좌표 겹침이 존재한다면
             {
                 if(bombst == false)
-                {
-                    b_gmover = true;
-                    ShowCursor(true);
-                }
-            }
-            if (TRUE == IntersectRect(&dst, &g_me, g_enemy2))     // 좌표 겹침이 존재한다면
-            {
-                if (bombst == false)
-                {
-                    b_gmover = true;
-                    ShowCursor(true);
-                }
-            }
-            if (TRUE == IntersectRect(&dst, &g_me, g_enemy3))     // 좌표 겹침이 존재한다면
-            {
-                if (bombst == false)
                 {
                     b_gmover = true;
                     ShowCursor(true);
@@ -590,11 +513,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     TextOut(hdc, 10, 700, string, lstrlenW(string));
                     wsprintfW(string, L"치트(?) : %lc", cheat);
                     TextOut(hdc, 1300, 700, string, lstrlenW(string));
-                    for (int i = 0; i < sizeof(g_enemy1) / sizeof(RECT); i++)
+                    for(int j = 0 ; j <3; j++)
                     {
-                        Ellipse(hdc, g_enemy1[i].left, g_enemy1[i].top, g_enemy1[i].right, g_enemy1[i].bottom);
-                        Ellipse(hdc, g_enemy2[i].left, g_enemy2[i].top, g_enemy2[i].right, g_enemy2[i].bottom);
-                        Ellipse(hdc, g_enemy3[i].left, g_enemy3[i].top, g_enemy3[i].right, g_enemy3[i].bottom);
+                        for (int i = 0; i < 50; i++)
+                        {
+                            Ellipse(hdc, g_enemy[j][i].left, g_enemy[j][i].top, g_enemy[j][i].right, g_enemy[j][i].bottom);
+                            Ellipse(hdc, g_enemy[j][i].left, g_enemy[j][i].top, g_enemy[j][i].right, g_enemy[j][i].bottom);
+                            Ellipse(hdc, g_enemy[j][i].left, g_enemy[j][i].top, g_enemy[j][i].right, g_enemy[j][i].bottom);
+                        }
                     }
                 }
             }
