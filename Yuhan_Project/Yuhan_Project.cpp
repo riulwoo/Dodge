@@ -162,8 +162,6 @@ RECT g_enemy[3][50] = { 0, };
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
 
-int cnt=0;
-
 // b_start가 생성된 상태인지 체크
 bool b_flag = true; 
 
@@ -186,23 +184,19 @@ int y[50] = { 0 };
 // 적의 이동좌표
 int dstX[50] = { 0 }, dstY[50] = { 0 };
 
-
+// 화면무효화랑 닿는지 체크 할때 자꾸 쓰기 구찮아서 쓰는 변수입니다..
+RECT dst;
 
 DWORD WINAPI enemyspawn(LPVOID Param)
 {
     srand((unsigned int)time(NULL));
-    static HWND g_hWnd;
-    int enenum = (int)Param;
     int decidewall;
-    // 메시지 테스트용 버퍼
-    WCHAR buffe[128] = { 0, };
 
     for(int t =0 ; t < 100 ; t++)
     {
-        WaitForSingleObject(g_mux, INFINITE);
         for (int i = 0; i < 50; i++)
         {
-            decidewall = rand() % 9;
+            decidewall = rand() % 12;
             if (decidewall == 0)
             {
                 // 적이 위에서 생성되어 아래로 이동
@@ -213,7 +207,27 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 dstX[i] = rand() % Canvas_X;
                 dstY[i] = Canvas_Y;
             }
-            else if (decidewall == 4)
+            if (decidewall == 1)
+            {
+                // 적이 위에서 생성되어 오른쪽으로 이동
+                x[i] = rand() % Canvas_X;
+                y[i] = 0;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = Canvas_X;
+                dstY[i] = rand() % Canvas_Y;
+            }
+            if (decidewall == 2)
+            {
+                // 적이 위에서 생성되어 왼쪽으로 이동
+                x[i] = rand() % Canvas_X;
+                y[i] = 0;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = 0;
+                dstY[i] = rand() % Canvas_Y;
+            }
+            else if (decidewall == 3)
             {
                 // 적이 오른쪽에서 생성되어 위쪽으로 이동
                 x[i] = Canvas_X;
@@ -223,7 +237,7 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 dstX[i] = rand() % Canvas_X;
                 dstY[i] = 0;
             }
-            else if (decidewall == 1)
+            else if (decidewall == 4)
             {
                 // 적이 오른쪽에서 생성되어 왼쪽으로 이동
                 x[i] = Canvas_X;
@@ -233,7 +247,17 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 dstX[i] = 0;
                 dstY[i] = rand() % Canvas_Y;
             }
-            else if (decidewall == 2)
+            else if (decidewall == 5)
+            {
+                // 적이 오른쪽에서 생성되어 오른쪽으로 이동
+                x[i] = Canvas_X;
+                y[i] = rand() % Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = Canvas_X;
+                dstY[i] = rand() % Canvas_Y;
+            }
+            else if (decidewall == 6)
             {
                 // 적이 아래에서 생성되어 위로 이동
                 x[i] = rand() % Canvas_X;
@@ -243,7 +267,27 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 dstX[i] = rand() % Canvas_X;
                 dstY[i] = 0;
             }
-            else if (decidewall == 3)
+            else if (decidewall == 7)
+            {
+                // 적이 아래에서 생성되어 오른쪽으로 이동
+                x[i] = rand() % Canvas_X;
+                y[i] = Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = Canvas_X;
+                dstY[i] = rand() % Canvas_Y;
+            }
+            else if (decidewall == 8)
+            {
+                // 적이 아래에서 생성되어 왼쪽으로 이동
+                x[i] = rand() % Canvas_X;
+                y[i] = Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = 0;
+                dstY[i] = rand() % Canvas_Y;
+            }
+            else if (decidewall == 9)
             {
                 // 적이 왼쪽에서 생성되어 오른쪽으로 이동
                 x[i] = 0;
@@ -253,9 +297,29 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 dstX[i] = Canvas_X;
                 dstY[i] = rand() % Canvas_Y;
             }
+            else if (decidewall == 10)
+            {
+                // 적이 왼쪽에서 생성되어 위쪽으로 이동
+                x[i] = 0;
+                y[i] = rand() % Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = rand() % Canvas_X;
+                dstY[i] = 0;
+            }
+            else if (decidewall == 11)
+            {
+                // 적이 왼쪽에서 생성되어 아래쪽으로 이동
+                x[i] = 0;
+                y[i] = rand() % Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = rand() % Canvas_X;
+                dstY[i] = Canvas_Y;
+            }
         }
 
-            //////////////////////////////////////////////end of set to enemy's location////////////////////////////////////////////////////////////////
+        // enemy의 각 개체마다 위에서 얻어온 랜덤 좌표와 랜덤 경로 설정
         for (int j = 0; j < 3; j++)
         {
             for (int i = 0; i < 50; i++)
@@ -267,7 +331,6 @@ DWORD WINAPI enemyspawn(LPVOID Param)
             }
         }
     }
-    ReleaseMutex(g_mux);
     ExitThread(0);
     return 0;
 }
@@ -317,7 +380,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
             
         }
-        SetTimer(hWnd, TIMER_ID_ENEMYMOVE, 100, NULL);
+        SetTimer(hWnd, TIMER_ID_ENEMYMOVE, 40, NULL);
         break;
     case WM_TIMER:
         switch (wParam)
@@ -325,7 +388,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case TIMER_ID_1:
             {
                 atime++;
-                if (atime % 10 == 0)
+                if (atime % 5 == 0)
                 {
                     CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
 
@@ -342,6 +405,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case TIMER_ID_2:
             {
                 btime--;
+                for(int i = 0 ; i < 3 ; i++)
+                {
+                    for(int j = 0 ; j < 50 ; j++)
+                    {
+                        if(TRUE == IntersectRect(&dst, &g_bomb, &g_enemy[i][j]))
+                        {
+                            g_enemy[i][j].left = -1000;
+                            g_enemy[i][j].top = -1000;
+                            g_enemy[i][j].right = g_enemy[i][j].left;
+                            g_enemy[i][j].bottom = g_enemy[i][j].top;
+
+                        }
+                    }
+                }
                 if (btime <= 0)
                 {
                     g_me.left += 20;
@@ -388,6 +465,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             g_enemy[j][i].top += 10;
                             g_enemy[j][i].bottom += 10;
                         }
+                        InvalidateRect(hWnd, NULL, TRUE);
                     }
                 }
                 break;
@@ -444,16 +522,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 g_me.right = g_me.left + 40;
                 g_me.bottom = g_me.top + 40;
             }
-
-            if (TRUE == IntersectRect(&dst, &g_me, *g_enemy))     // 좌표 겹침이 존재한다면
+            for(int i = 0 ; i < 3 ; i++)
             {
-                if(bombst == false)
+                for(int j = 0 ; j < 50 ; j++)
                 {
-                    b_gmover = true;
-                    ShowCursor(true);
+                    if (TRUE == IntersectRect(&dst, &g_me, &g_enemy[i][j]))     // 좌표 겹침이 존재한다면
+                    {
+                        if(bombst == false)
+                        {
+                            b_gmover = true;
+                            ShowCursor(true);
+                        }
+                    }
                 }
             }
-            InvalidateRect(hWnd, NULL, TRUE);
+
         }
         
     }
@@ -494,14 +577,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 ShowCursor(true);
                 wsprintfW(string, L"생존시간 %d : %d", atime / 60, atime % 60);
-                TextOut(hdc, 550, 200, L"GAME OVER", lstrlenW(L"GAME OVER"));
+                TextOut(hdc, 750, 200, L"GAME OVER", lstrlenW(L"GAME OVER"));
                 wsprintfW(string, L"생존시간 %d : %d", atime / 60, atime % 60);
                 TextOut(hdc, 650, 300, string, lstrlenW(string));
                 b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 500, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
             }
             if (b_flag == true)
             {
-                TextOut(hdc, 615, 200, L"DODGE", lstrlenW(L"DODGE"));
+                TextOut(hdc, 650, 200, L"DODGE", lstrlenW(L"DODGE"));
                 TextOut(hdc, 615, 700, L"날아오는 운석을 피해라..!", lstrlenW(L"날아오는 운석을 피해라..!"));
             }
             if (b_flag == false) {
