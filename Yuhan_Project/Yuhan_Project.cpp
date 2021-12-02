@@ -153,11 +153,15 @@ int btime = 5;
 
 // 생존 시간
 int atime = 0;
+// 난이도 증가시 필요한 웨이포인트 시간
+int needtime = 6;
+
 int enemynum;
 
-// 플레이어와 폭탄의 좌표 선언
+// RECT
 RECT g_me, g_bomb;
 RECT g_enemy[3][50] = { 0, };
+RECT g_point;
 
 // 마우스의 이전 좌표를 받아 오기 위한 변수
 int g_x, g_y;
@@ -168,6 +172,8 @@ bool b_flag = true;
 // 게임오버인지 체크
 bool b_gmover = false;
 
+// 레벨업
+bool levelup = false;
 WCHAR cheat = 'X';
 //타이머 아이디를 선언
 #define TIMER_ID_1          1   // 생존 시간을 위한 타이머 아이디
@@ -409,8 +415,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 g_enemy[j][i].right = g_enemy[j][i].left + 20;
                 g_enemy[j][i].bottom = g_enemy[j][i].top + 20;
             }
+            Sleep(30);
         }
 
+        g_point.left = -1000;
+        g_point.top = -1000;
+        g_point.right = g_point.left + 40;
+        g_point.bottom = g_point.top + 40;
         // 게임시작 버튼
         b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 300, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
 
@@ -433,9 +444,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
 
                 }
-                
+                if (atime == 30)
+                {
+                    levelup = true;
+                    g_point.left = rand() % Canvas_X;
+                    g_point.top = rand() % Canvas_Y;
+                    g_point.right = g_point.left + 40;
+                    g_point.bottom = g_point.top + 40;
+                }
                 if (b_gmover == true)
                 {
+                    ShowCursor(true);
                     KillTimer(hWnd, TIMER_ID_1);
                 }
                 InvalidateRect(hWnd, NULL, TRUE);
@@ -445,20 +464,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case TIMER_ID_2:
             {
                 btime--;
-                for(int i = 0 ; i < 3 ; i++)
-                {
-                    for(int j = 0 ; j < 50 ; j++)
-                    {
-                        if(TRUE == IntersectRect(&dst, &g_bomb, &g_enemy[i][j]))
-                        {
-                            g_enemy[i][j].left = -1000;
-                            g_enemy[i][j].top = -1000;
-                            g_enemy[i][j].right = g_enemy[i][j].left;
-                            g_enemy[i][j].bottom = g_enemy[i][j].top;
 
-                        }
-                    }
-                }
                 if (btime <= 0)
                 {
                     g_me.left += 20;
@@ -506,8 +512,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             g_enemy[j][i].bottom += 10;
                         }
                         InvalidateRect(hWnd, NULL, TRUE);
+                        
                     }
+
                 }
+
                 break;
         }
         break;
@@ -555,6 +564,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_me.right = x + 10;
             g_me.bottom = y + 10;
 
+
             if (bombst)
             {
                 g_me.left -= 20;
@@ -571,7 +581,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         if(bombst == false)
                         {
                             b_gmover = true;
-                            ShowCursor(true);
+
                         }
                     }
                 }
@@ -620,7 +630,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 TextOut(hdc, 750, 200, L"GAME OVER", lstrlenW(L"GAME OVER"));
                 wsprintfW(string, L"생존시간 %d : %d", atime / 60, atime % 60);
                 TextOut(hdc, 650, 300, string, lstrlenW(string));
-                b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 600, 500, 200, 60, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
+                b_start = CreateWindow(L"button", L"START", WS_CHILD | WS_VISIBLE, 0, 0, 1, 1, hWnd, (HMENU)IDM_BTN_START, hInst, NULL);
             }
             if (b_flag == true)
             {
@@ -636,6 +646,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     TextOut(hdc, 10, 700, string, lstrlenW(string));
                     wsprintfW(string, L"치트(?) : %lc", cheat);
                     TextOut(hdc, 1300, 700, string, lstrlenW(string));
+                    Rectangle(hdc, g_point.left, g_point.top, g_point.right, g_point.bottom);
                     for(int j = 0 ; j <3; j++)
                     {
                         for (int i = 0; i < 50; i++)
@@ -647,8 +658,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     }
                 }
             }
+            if(levelup)
+            {
+                wsprintfW(string, L"웨이포인트 : %d", needtime);
+                TextOut(hdc, 200, 10, string, lstrlenW(string));
+            }
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             // 플레이어의 생성
+            if(b_gmover != true )
             Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
             EndPaint(hWnd, &ps);
         }
