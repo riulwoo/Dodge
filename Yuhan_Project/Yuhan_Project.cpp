@@ -196,7 +196,7 @@ DWORD WINAPI enemyspawn(LPVOID Param)
     {
         for (int i = 0; i < 50; i++)
         {
-            decidewall = rand() % 12;
+            decidewall = rand() % 16;
             if (decidewall == 0)
             {
                 // 적이 위에서 생성되어 아래로 이동
@@ -316,6 +316,46 @@ DWORD WINAPI enemyspawn(LPVOID Param)
                 // 생성된 적의 경로 설정
                 dstX[i] = rand() % Canvas_X;
                 dstY[i] = Canvas_Y;
+            }
+            else if (decidewall == 12)
+            {
+                // 적이 랜덤에서 생성되어 아래쪽으로 이동
+                x[i] = rand() % Canvas_X;
+                y[i] = rand() % Canvas_Y;
+
+                // 생성된 적의 경로 설정
+                dstX[i] = rand() % Canvas_X;
+                dstY[i] = Canvas_Y;
+            }
+            else if (decidewall == 13)
+            {
+            // 적이 랜덤에서 생성되어 위쪽으로 이동
+            x[i] = rand() % Canvas_X;
+            y[i] = rand() % Canvas_Y;
+
+            // 생성된 적의 경로 설정
+            dstX[i] = rand() % Canvas_X;
+            dstY[i] = 0;
+            }
+            else if (decidewall == 14)
+            {
+            // 적이 랜덤에서 생성되어 오른쪽으로 이동
+            x[i] = rand() % Canvas_X;
+            y[i] = rand() % Canvas_Y;
+
+            // 생성된 적의 경로 설정
+            dstX[i] = Canvas_X;
+            dstY[i] = rand() % Canvas_Y;
+            }
+            else if (decidewall == 15)
+            {
+            // 적이 랜덤에서 생성되어 왼쪽으로 이동
+            x[i] = rand() % Canvas_X;
+            y[i] = rand() % Canvas_Y;
+
+            // 생성된 적의 경로 설정
+            dstX[i] = 0;
+            dstY[i] = rand() % Canvas_Y;
             }
         }
 
