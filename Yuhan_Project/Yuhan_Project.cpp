@@ -159,6 +159,10 @@ int atime = 0;
 // 난이도 증가시 필요한 웨이포인트 시간
 int needtime = 6;
 
+// 타이머 스피드 조절 변수
+int timesp1 = 1000;
+int timesp2 = 35;
+
 // 점수
 int score = 0;                      // 점수
 int enemynum;                       // 적의 랜덤 생성 수 ( 사용 x )
@@ -461,12 +465,52 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
         }
 
-        SetTimer(hWnd, TIMER_ID_1, 1000, NULL);
-        SetTimer(hWnd, TIMER_ID_ENEMYMOVE, 35, NULL);
+        SetTimer(hWnd, TIMER_ID_1, timesp1, NULL);
+        SetTimer(hWnd, TIMER_ID_ENEMYMOVE, timesp2, NULL);
 
         p.left = 660; p.top = 530; p.right = 690; p.bottom = 560;
         break;
+    case WM_LBUTTONDOWN:
+        if(b_gmover)
+        {
+            if (TRUE == IntersectRect(&dst, &g_me, &EX))
+            {
+                HWND YUHANPROJECT;
+                YUHANPROJECT = FindWindow(L"YUHANPROJECT", NULL);
+                SendMessage(YUHANPROJECT, WM_CLOSE, wParam, lParam);
+            }
+            if (TRUE == IntersectRect(&dst, &g_me, &RE))
+            {
+                b_gmover = false;
+                b_flag = false;
+                levelup = false;
+                score = 0;
+                atime = 0;
+                bomb = 3;
+                needtime = 6;
+                timesp1 = 1000;
+                timesp2 = 35;
 
+                g_item.left = rand() % 1200 + 30;
+                g_item.top = rand() % 1200 + 30;
+                g_item.right = g_item.left + 30;
+                g_item.bottom = g_item.top + 30;
+
+                KillTimer(hWnd, TIMER_ID_1);
+                KillTimer(hWnd, TIMER_ID_2);
+                KillTimer(hWnd, TIMER_ID_ENEMYMOVE);
+                KillTimer(hWnd, TIMER_ID_PTTM);
+                CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
+                SetTimer(hWnd, TIMER_ID_1, timesp1, NULL);
+                SetTimer(hWnd, TIMER_ID_ENEMYMOVE, timesp2, NULL);
+
+            }
+        }
+        break;
+
+    case WM_RBUTTONDOWN:
+        ShowCursor(true);
+        break;
     case WM_TIMER:
         switch (wParam)
         {
@@ -475,6 +519,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 // 게임종료시
                 if (b_gmover == true)
                 {
+                    timesp1 = 1;
+                    timesp2 = 1;
                     KillTimer(hWnd, TIMER_ID_PTTM);
                     KillTimer(hWnd, TIMER_ID_1);
                     ShowCursor(true);
@@ -487,20 +533,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
 
                 // 아이템 구현
-                if (atime == 1)
+                if (atime == 0)
                 {
-                    g_item.left = rand() % Canvas_X;
-                    g_item.top = rand() % Canvas_Y;
+                    g_item.left = rand() % 1200 + 30;
+                    g_item.top = rand() % 600 + 30;
                     g_item.right = g_item.left + 30;
                     g_item.bottom = g_item.top + 30;
+                    Sleep(40);
                 }
 
                 // 웨이포인트 구현
                 if (atime == 15)
                 {
                     levelup = true;
-                    g_point.left = rand() % Canvas_X - 100;
-                    g_point.top = rand() % Canvas_Y -100;
+                    g_point.left = rand() % 1200 + 60;
+                    g_point.top = rand() % 600 + 60;
                     g_point.right = g_point.left + 40;
                     g_point.bottom = g_point.top + 40;
                     SetTimer(hWnd, TIMER_ID_PTTM, 1000, NULL);
@@ -530,6 +577,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             case TIMER_ID_ENEMYMOVE:
             {
+                if (b_flag && b_gmover)
+                    ShowCursor(true);
                 // 적의 움직임 구현
                 for (int j = 0; j < 3; j++)
                 {
@@ -566,6 +615,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         InvalidateRect(hWnd, NULL, TRUE);
                     }
                 }
+
             }
                 break;
             case TIMER_ID_PTTM:
@@ -574,17 +624,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 if (needtime <= 0)
                 {
-                    b_gmover = true;
-                    ShowCursor(true);
-                }
-                if (TRUE == IntersectRect(&dst, &g_me, &g_point))
-                {
-                    g_point.left = rand() % Canvas_X - 150;
-                    g_point.top = rand() % Canvas_Y - 150;
-                    g_point.right = g_point.left + 40;
-                    g_point.bottom = g_point.top + 40;
-
                     needtime = 6;
+                    b_gmover = true;
+                    timesp1 = 1;
+                    timesp2 = 1;
+                    ShowCursor(true);
                 }
             }
                 break;
@@ -623,19 +667,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         RECT dst;
         // START 버튼이 없다면 플레이어의 좌표를 마우스 좌표로 설정
+        int x, y;
+        x = LOWORD(lParam);
+        y = HIWORD(lParam);
+
+        g_me.left = x - 12;
+        g_me.top = y - 12;
+        g_me.right = x + 12;
+        g_me.bottom = y + 12;
+
         if (b_flag)
             ShowCursor(true);
         else if (b_flag == false)
         {
             ShowCursor(false); // 시작시 커서를 숨김
-            int x, y;
-            x = LOWORD(lParam);
-            y = HIWORD(lParam);
 
-            g_me.left = x - 12;
-            g_me.top = y - 12;
-            g_me.right = x + 12;
-            g_me.bottom = y + 12;
 
             if (bombst)
             {
@@ -656,6 +702,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         if(bombst == false)
                         {
                             b_gmover = true;
+                            timesp1 = 1;
+                            timesp2 = 1;
                             b_flag = true;
                             KillTimer(hWnd, TIMER_ID_PTTM);
                             KillTimer(hWnd, TIMER_ID_1);
@@ -677,15 +725,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
 
+
+
             // 플레이어와 아이템이 겹치는지 체크
             if (TRUE == IntersectRect(&dst, &g_me, &g_item)) // 겹친다면 아이템 위치 재설정, 점수 증가
             {
-                g_item.left = rand() % Canvas_X - 150;
-                g_item.top = rand() % Canvas_Y - 150;
+                g_item.left = rand() % 1200 + 100;
+                g_item.top = rand() % 600 + 100;
                 g_item.right = g_item.left + 30;
                 g_item.bottom = g_item.top + 30;
 
                 score += 100;
+            }
+            if (TRUE == IntersectRect(&dst, &g_me, &g_point))
+            {
+                g_point.left = rand() % 1200 + 100;
+                g_point.top = rand() % 600 + 100;
+                g_point.right = g_point.left + 40;
+                g_point.bottom = g_point.top + 40;
+
+                needtime = 6;
             }
         }
     }
@@ -700,7 +759,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_BTN_START:
                 DestroyWindow(b_start);
                 b_flag = false;
-                CreateThread(NULL, 0, enemyspawn, (LPVOID)enemynum, 0, NULL);
+                
                 break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -721,7 +780,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             WCHAR string[128] = { 0, };
             HDC hdc = BeginPaint(hWnd, &ps);
             HFONT hFont, OldFont;
-            HWND YUHANPROJECT;
+            
 
 
             if (b_flag == true)
@@ -739,6 +798,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 RoundRect(hdc, 820, 530, 850, 560,12,12); TextOut(hdc, 860, 535, L" << 아이템", lstrlenW(L" << 아이템"));
                 TextOut(hdc, 605, 700, L"( ? ) 키를 누르면 신기한일이..", lstrlenW(L"( ? ) 키를 누르면 신기한일이.."));
             }
+
             if (b_flag == false) {
                 if (b_gmover == false) {
                     wsprintfW(string, L"생존 시간 %d : %d", atime / 60, atime % 60);
@@ -783,13 +843,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Rectangle(hdc, 720, 380, 900, 450);
                 wsprintfW(string, L"EXIT");
                 TextOut(hdc, 800, 410, string, lstrlenW(string));
-                /*YUHANPROJECT = FindWindow(L"YUHANPROJECT", NULL);*/
+                wsprintfW(string, L"커서가 안나올시 우클릭 몇번 하고 기다리면 나옵니다(아마도)");
+                TextOut(hdc, 480, 350, string, lstrlenW(string));
             }
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             // 플레이어의 생성
-            if(b_gmover != true )
-            Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
-
+            if(b_gmover != true && b_flag != true)
+            {
+                    Rectangle(hdc, g_me.left, g_me.top, g_me.right, g_me.bottom);
+            }
             EndPaint(hWnd, &ps);
         }
         break;
