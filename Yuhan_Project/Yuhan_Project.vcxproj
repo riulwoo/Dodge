@@ -24,6 +24,7 @@
     <ProjectGuid>{8802f951-a3a1-414c-91e5-6bc670eff63d}</ProjectGuid>
     <RootNamespace>YuhanProject</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>DODGE</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -145,7 +146,7 @@
     <ClInclude Include="Yuhan_Project.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Yuhan_Project.cpp" />
+    <ClCompile Include="DODGE.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Yuhan_Project.rc" />
